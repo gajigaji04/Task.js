@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task</title>
+  </head>
+  <body>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadExcel()">Upload Excel</button>
+
+    <script>
+      function uploadExcel() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        if (file) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          fetch("http://localhost:3000/upload_excel", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        } else {
+          console.error("No file selected");
+        }
+      }
+    </script>
+  </body>
+</html>
