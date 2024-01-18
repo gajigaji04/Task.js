@@ -1,13 +1,10 @@
 const express = require("express");
 const multer = require("multer");
-const XLSX = require("xlsx");
+const XlsxPopulate = require("xlsx-populate");
 const { Sequelize, DataTypes } = require("sequelize");
 
 const app = express();
 const port = 3000;
-
-// Set 'ejs' as the view engine
-app.set("view engine", "ejs");
 
 // Sequelize 설정
 const sequelize = new Sequelize({
@@ -31,26 +28,27 @@ const Data = sequelize.define("Data", {
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+app.set("view engine", "ejs");
+app.set("views", __dirname + "/views");
+
 app.get("/", (req, res) => {
   res.render("index");
 });
 
-// 엑셀 파일 업로드 및 데이터베이스에 저장
 app.post("/upload_excel", upload.single("file"), async (req, res) => {
   try {
     const buffer = req.file.buffer;
-    const workbook = XLSX.read(buffer, { type: "buffer" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    // Use xlsx-populate to read Excel file
+    const workbook = await XlsxPopulate.fromDataAsync(buffer);
+    const sheet = workbook.sheet(0);
 
     // 데이터베이스에 엑셀 데이터 등록
-    for (const cellAddress in sheet) {
-      if (cellAddress[0] === "A" && parseInt(cellAddress.slice(1)) > 1) {
-        const rowNumber = parseInt(cellAddress.slice(1));
-        const name = sheet[`A${rowNumber}`].v;
-        const value = sheet[`B${rowNumber}`].v;
+    for (let row = 2; row <= sheet.rowCount(); row++) {
+      const name = sheet.cell(`A${row}`).value();
+      const value = sheet.cell(`B${row}`).value();
 
-        await Data.create({ name, value });
-      }
+      await Data.create({ name, value });
     }
 
     res.json({ message: "Excel data uploaded successfully" });
